@@ -3,7 +3,6 @@
 use crate::cache::ResponseCache;
 use crate::error::Result;
 use crate::provider::LLMProvider;
-use rayon::prelude::*;
 use std::sync::Mutex;
 
 /// Parallel chunk processor
@@ -44,11 +43,11 @@ impl ParallelProcessor {
                 .ok(); // Ignore if already initialized
         }
         
-        // Process chunks in parallel using tokio + rayon
+        // Process chunks in parallel using tokio
         let query = query.to_string();
         let model = model.to_string();
         
-        // Create tasks for all chunks
+        // Create async tasks for all chunks
         let tasks: Vec<_> = chunks
             .iter()
             .enumerate()
@@ -57,44 +56,35 @@ impl ParallelProcessor {
                 let query = query.clone();
                 let model = model.clone();
                 
-                // Check cache first
-                let cache_key = if let Some(cache_mutex) = cache {
-                    let cache = cache_mutex.lock().unwrap();
-                    let key = ResponseCache::generate_key(&chunk, &query, &model);
-                    if let Some(score) = cache.get(&key) {
-                        return Ok((idx, score));
-                    }
-                    Some(key)
-                } else {
-                    None
-                };
-                
-                // Need to calculate
-                let score_result = tokio::task::block_in_place(|| {
-                    tokio::runtime::Handle::current().block_on(async {
-                        provider.calculate_relevance(&chunk, &query).await
-                    })
-                });
-                
-                match score_result {
-                    Ok(score) => {
-                        // Store in cache
-                        if let (Some(key), Some(cache_mutex)) = (cache_key, cache) {
-                            let mut cache = cache_mutex.lock().unwrap();
-                            cache.set(key, score);
+                async move {
+                    // Check cache first
+                    let cache_key = if let Some(cache_mutex) = cache {
+                        let cache = cache_mutex.lock().unwrap();
+                        let key = ResponseCache::generate_key(&chunk, &query, &model);
+                        if let Some(score) = cache.get(&key) {
+                            return Ok((idx, score));
                         }
-                        Ok((idx, score))
+                        Some(key)
+                    } else {
+                        None
+                    };
+                    
+                    // Calculate score
+                    let score = provider.calculate_relevance(&chunk, &query).await?;
+                    
+                    // Store in cache
+                    if let (Some(key), Some(cache_mutex)) = (cache_key, cache) {
+                        let mut cache = cache_mutex.lock().unwrap();
+                        cache.set(key, score);
                     }
-                    Err(e) => Err(e),
+                    
+                    Ok::<(usize, f64), crate::error::Error>((idx, score))
                 }
             })
             .collect();
         
-        // Execute in parallel
-        let results: Vec<Result<(usize, f64)>> = tasks
-            .into_par_iter()
-            .map(|task| task)
-            .collect();
+        // Execute all tasks concurrently
+        let results = futures::future::join_all(tasks).await;
         
         // Collect and sort by index
         let mut scores = vec![0.0; chunks.len()];
