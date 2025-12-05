@@ -1,1 +1,7 @@
 /target
+
+# Local test files with API keys
+examples/test_providers.rs
+examples/test_text.rs
+**/api_keys.txt
+**/*_secret.rs

@@ -36,6 +36,7 @@ pub mod entropy;
 pub mod error;
 pub mod optimizer;
 pub mod provider;
+pub mod text_chunker;
 pub mod tokenizer;
 pub mod types;
 
@@ -48,6 +49,7 @@ pub use compressor::LongCodeZip;
 pub use tokenizer::{Tokenizer, TokenizerModel, ApproximateTokenizer};
 pub use entropy::{EntropyChunker, EntropyChunk, ThresholdMethod};
 pub use optimizer::{KnapsackOptimizer, Block, SelectionResult};
+pub use text_chunker::{TextChunker, TextChunk, TextChunkingStrategy, ChunkType};
 
 /// Library version
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");

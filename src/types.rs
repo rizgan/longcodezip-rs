@@ -106,6 +106,70 @@ impl ProviderConfig {
             model,
         )
     }
+    
+    /// Create config for Azure OpenAI
+    pub fn azure_openai(api_key: &str, resource_name: &str, deployment_name: &str, api_version: &str) -> Self {
+        Self::new(
+            "azure-openai",
+            &format!("https://{}.openai.azure.com/openai/deployments/{}/chat/completions?api-version={}", 
+                    resource_name, deployment_name, api_version),
+            api_key,
+            deployment_name,
+        )
+    }
+    
+    /// Create config for Google Gemini
+    pub fn gemini(api_key: &str, model: &str) -> Self {
+        Self::new(
+            "gemini",
+            "https://generativelanguage.googleapis.com/v1beta/models",
+            api_key,
+            model,
+        )
+    }
+    
+    /// Create config for Qwen (Alibaba)
+    pub fn qwen(api_key: &str, model: &str) -> Self {
+        Self::new(
+            "qwen",
+            "https://dashscope.aliyuncs.com/api/v1/services/aigc/text-generation/generation",
+            api_key,
+            model,
+        )
+    }
+    
+    /// Create config for Ollama (local)
+    pub fn ollama(model: &str, base_url: Option<&str>) -> Self {
+        let url = base_url.unwrap_or("http://localhost:11434");
+        Self::new(
+            "ollama",
+            &format!("{}/api/chat", url),
+            "", // Ollama doesn't require API key
+            model,
+        )
+    }
+    
+    /// Create config for LM Studio (local)
+    pub fn lm_studio(model: &str, base_url: Option<&str>) -> Self {
+        let url = base_url.unwrap_or("http://localhost:1234");
+        Self::new(
+            "lm-studio",
+            &format!("{}/v1/chat/completions", url),
+            "", // LM Studio doesn't require API key
+            model,
+        )
+    }
+    
+    /// Create config for llama.cpp server
+    pub fn llama_cpp(model: &str, base_url: Option<&str>) -> Self {
+        let url = base_url.unwrap_or("http://localhost:8080");
+        Self::new(
+            "llama-cpp",
+            &format!("{}/v1/chat/completions", url),
+            "", // llama.cpp doesn't require API key
+            model,
+        )
+    }
 }
 
 /// Configuration for code compression

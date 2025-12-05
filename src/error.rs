@@ -25,6 +25,9 @@ pub enum Error {
     
     #[error("IO error: {0}")]
     IoError(#[from] std::io::Error),
+    
+    #[error("Compression error: {0}")]
+    CompressionError(String),
 }
 
 /// Result type alias for LongCodeZip operations

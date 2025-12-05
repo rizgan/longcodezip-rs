@@ -5,6 +5,7 @@ use crate::entropy::EntropyChunker;
 use crate::error::{Error, Result};
 use crate::optimizer::{Block, KnapsackOptimizer};
 use crate::provider::{create_provider, LLMProvider};
+use crate::text_chunker::{TextChunker, TextChunkingStrategy};
 use crate::types::{CompressionConfig, CompressionResult, FunctionCompression};
 use log::{debug, info};
 use std::collections::{HashMap, HashSet};
@@ -14,6 +15,7 @@ pub struct LongCodeZip {
     config: CompressionConfig,
     provider: Box<dyn LLMProvider>,
     entropy_chunker: EntropyChunker,
+    text_chunker: TextChunker,
     optimizer: KnapsackOptimizer,
 }
 
@@ -26,12 +28,14 @@ impl LongCodeZip {
         
         let provider = create_provider(config.provider.clone());
         let entropy_chunker = EntropyChunker::new();
+        let text_chunker = TextChunker::new();
         let optimizer = KnapsackOptimizer::new();
         
         Ok(Self { 
             config, 
             provider,
             entropy_chunker,
+            text_chunker,
             optimizer,
         })
     }
@@ -338,5 +342,169 @@ def multiply(x, y):
         
         assert!(!result.compressed_code.is_empty());
         assert!(result.compression_ratio <= 1.0);
+    }
+}
+
+impl LongCodeZip {
+    /// Compress regular text (non-code) with specified chunking strategy
+    ///
+    /// # Arguments
+    /// * `text` - The text to compress
+    /// * `query` - Query to determine relevance
+    /// * `instruction` - Additional instruction for the prompt
+    /// * `strategy` - Text chunking strategy (Paragraphs, Sentences, MarkdownSections)
+    ///
+    /// # Returns
+    /// CompressionResult with compressed text and statistics
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use longcodezip::{LongCodeZip, CompressionConfig, ProviderConfig, text_chunker::TextChunkingStrategy};
+    ///
+    /// # async fn example() -> Result<(), Box<dyn std::error::Error>> {
+    /// let config = CompressionConfig::default()
+    ///     .with_provider(ProviderConfig::deepseek("your-key"));
+    ///
+    /// let compressor = LongCodeZip::new(config)?;
+    /// let result = compressor.compress_text(
+    ///     "Your text here...",
+    ///     "What is the main idea?",
+    ///     "",
+    ///     TextChunkingStrategy::Paragraphs
+    /// ).await?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub async fn compress_text(
+        &self,
+        text: &str,
+        query: &str,
+        instruction: &str,
+        strategy: TextChunkingStrategy,
+    ) -> Result<CompressionResult> {
+        info!("Starting text compression");
+        debug!("Text length: {} chars", text.len());
+        debug!("Strategy: {:?}", strategy);
+        debug!("Query: {}", query);
+
+        // Step 1: Chunk text using specified strategy
+        let text_chunks = self.text_chunker.chunk_with_strategy(text, strategy)?;
+        info!("Split text into {} chunks", text_chunks.len());
+
+        // Convert to strings for processing
+        let chunks: Vec<String> = text_chunks.iter().map(|c| c.text.clone()).collect();
+
+        if chunks.is_empty() {
+            return Err(Error::CompressionError(
+                "No chunks created from text".to_string(),
+            ));
+        }
+
+        // Step 2: Calculate token counts
+        let mut chunk_tokens = Vec::new();
+        let mut total_tokens = 0;
+
+        for chunk in &chunks {
+            let tokens = self.provider.get_token_count(chunk).await?;
+            chunk_tokens.push(tokens);
+            total_tokens += tokens;
+        }
+
+        debug!("Total tokens: {}", total_tokens);
+
+        // Step 3: Determine target tokens
+        let target_token = if self.config.target_token > 0 {
+            self.config.target_token as usize
+        } else {
+            (total_tokens as f64 * self.config.rate) as usize
+        };
+
+        debug!("Target tokens: {}", target_token);
+
+        // Step 4: Calculate importance scores
+        let chunk_importances = if !query.trim().is_empty() {
+            // Use LLM relevance + chunk's own importance
+            let mut importances = Vec::new();
+            for (chunk, text_chunk) in chunks.iter().zip(text_chunks.iter()) {
+                let llm_score = self.provider.calculate_relevance(chunk, query).await?;
+                let combined = (llm_score + text_chunk.importance) / 2.0;
+                importances.push(combined);
+            }
+            importances
+        } else {
+            // Use only chunk's importance score
+            text_chunks.iter().map(|c| c.importance).collect()
+        };
+
+        // Step 5: Select chunks using knapsack
+        let (selected_indices, selected_tokens) = if self.config.use_knapsack {
+            self.select_chunks_knapsack(
+                &chunks,
+                &chunk_tokens,
+                &chunk_importances,
+                target_token,
+            )
+            .await?
+        } else {
+            // Greedy selection
+            let mut ranked: Vec<usize> = (0..chunks.len()).collect();
+            ranked.sort_by(|&a, &b| {
+                chunk_importances[b]
+                    .partial_cmp(&chunk_importances[a])
+                    .unwrap_or(std::cmp::Ordering::Equal)
+            });
+            self.select_chunks_within_budget(&ranked, &chunk_tokens, target_token)
+        };
+
+        info!(
+            "Selected {} chunks ({} tokens)",
+            selected_indices.len(),
+            selected_tokens
+        );
+
+        // Step 6: Build compressed text
+        let mut compressed_chunks = Vec::new();
+        let mut function_compressions = HashMap::new();
+
+        for (i, chunk) in chunks.iter().enumerate() {
+            if selected_indices.contains(&i) {
+                compressed_chunks.push(chunk.clone());
+
+                function_compressions.insert(
+                    i,
+                    FunctionCompression {
+                        original_tokens: chunk_tokens[i],
+                        compressed_tokens: chunk_tokens[i],
+                        compression_ratio: 1.0,
+                        individual_fine_ratio: Some(1.0),
+                        note: Some("Selected".to_string()),
+                    },
+                );
+            } else {
+                // Add omission marker
+                compressed_chunks.push("...".to_string());
+            }
+        }
+
+        let compressed_text = compressed_chunks.join("\n\n");
+
+        // Step 7: Build final prompt
+        let compressed_prompt = self.build_prompt(&compressed_text, query, instruction);
+
+        let final_tokens = self.provider.get_token_count(&compressed_prompt).await?;
+
+        Ok(CompressionResult {
+            original_code: text.to_string(),
+            compressed_code: compressed_text.clone(),
+            compressed_prompt,
+            original_tokens: total_tokens,
+            compressed_tokens: selected_tokens,
+            final_compressed_tokens: final_tokens,
+            compression_ratio: selected_tokens as f64 / total_tokens as f64,
+            function_compressions,
+            selected_functions: selected_indices,
+            fine_grained_method_used: Some(format!("text_{:?}", strategy)),
+        })
     }
 }

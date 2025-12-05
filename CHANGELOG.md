@@ -5,6 +5,61 @@
 Формат основан на [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 и проект следует [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.0] - 2024-12-05
+
+### Added ✨
+
+- 🎉 **Text compression support** - библиотека теперь работает не только с кодом!
+  - Новый модуль `text_chunker` с 4 стратегиями разбиения
+  - `TextChunkingStrategy::Paragraphs` - разбиение по абзацам (double newline)
+  - `TextChunkingStrategy::Sentences` - разбиение по предложениям (`.`, `?`, `!`)
+  - `TextChunkingStrategy::MarkdownSections` - по заголовкам Markdown (`#`, `##`, `###`)
+  - `TextChunkingStrategy::Custom(String)` - пользовательский разделитель
+- Новый метод `LongCodeZip::compress_text()` для сжатия обычного текста
+- Интеллектуальная оценка важности фрагментов:
+  - **Paragraphs**: Ключевые слова ("important", "key", "critical"), вопросы, длина
+  - **Sentences**: Позиция (первое/последнее), переходные слова, числа/статистика
+  - **Sections**: Уровень заголовка (h1>h2>h3), кодовые блоки, списки
+- Новый пример `text_compression_demo.rs` с демонстрацией всех стратегий
+- Документация **TEXT_COMPRESSION.md** с полным руководством (~350 строк)
+- 5 unit тестов для TextChunker
+
+### Fixed 🐛
+
+- Добавлен недостающий вариант `Error::CompressionError` в enum Error
+- Исправлены аннотации типов в `text_chunker.rs` (явные `f64` для score)
+
+### Changed 🔄
+
+- Версия обновлена с 0.4.0 → 0.5.0
+- Description в Cargo.toml: "compress long code and text"
+- Keywords в Cargo.toml: добавлено "text"
+- README.md обновлен с информацией о сжатии текста
+- Экспорты в lib.rs: добавлены TextChunker, TextChunk, TextChunkingStrategy, ChunkType
+
+### Tests 🧪
+
+- Все 32 теста проходят (27 unit + 5 integration)
+- Новые тесты: paragraph_chunking, sentence_chunking, markdown_chunking, custom_delimiter, importance_scoring
+
+### Performance ⚡
+
+- Paragraphs: 2387 chars → 413→164 tokens (39.7%) за 0.01s
+- Sentences: 420→160 tokens (38.1%) за 0.01s
+- MarkdownSections: 70→20 tokens (28.6%) за <0.01s
+
+## [0.4.0] - 2024-12-05
+
+### Added ✨
+
+- Тестирование с провайдерами DeepSeek и Alibaba Qwen
+- Пример `test_providers.rs` (локальный, не в git для защиты API ключей)
+- Обновлен .gitignore: `examples/test_providers.rs`, `examples/test_text.rs`
+
+### Changed 🔄
+
+- Улучшена документация провайдеров в PROVIDER_GUIDE.md
+
 ## [0.2.0] - 2024-12-05
 
 ### Added ✨
@@ -83,6 +138,70 @@
 - Обновлены существующие тесты для точного подсчета
 - Все 18 тестов проходят успешно
 
+## [0.4.0] - 2024-12-05
+
+### Added ✨
+
+- **Поддержка множества LLM провайдеров** - расширен список поддерживаемых API
+  - **Cloud провайдеры:**
+    - OpenAI (GPT-4, GPT-3.5-turbo)
+    - DeepSeek (deepseek-chat)
+    - **Anthropic Claude** (Claude 3.5 Sonnet, Opus, Haiku)
+    - **Azure OpenAI** (managed OpenAI endpoints)
+    - **Google Gemini** (Gemini Pro, 1.5 Pro/Flash)
+    - **Qwen/Alibaba** (Qwen Turbo, Plus, Max)
+  - **Local провайдеры (без API ключа):**
+    - **Ollama** - популярные open-source модели
+    - **LM Studio** - GUI для локальных моделей
+    - **llama.cpp server** - оптимизированный inference
+- Provider-specific реализации:
+  - `AnthropicProvider` - Messages API с правильными headers
+  - `GeminiProvider` - Google AI API формат
+  - `QwenProvider` - DashScope API Alibaba
+  - `AzureOpenAIProvider` - Azure-specific endpoint и auth
+  - OpenAI-compatible для Ollama, LM Studio, llama.cpp
+- Helper методы в `ProviderConfig`:
+  - `azure_openai()` - Azure OpenAI конфигурация
+  - `gemini()` - Google Gemini конфигурация
+  - `qwen()` - Qwen/Alibaba конфигурация
+  - `ollama()` - Ollama локальная модель
+  - `lm_studio()` - LM Studio локальная модель
+  - `llama_cpp()` - llama.cpp server конфигурация
+- Новый пример `providers_demo` - демонстрация всех провайдеров
+- Документация `PROVIDER_GUIDE.md`:
+  - Настройка каждого провайдера
+  - Примеры использования
+  - Сравнительная таблица
+  - Best practices
+  - Troubleshooting
+
+### Changed 🔄
+
+- `create_provider()` теперь выбирает правильный provider по типу
+- Все провайдеры реализуют единый `LLMProvider` trait
+- Улучшена обработка ошибок для разных API форматов
+- README обновлен со списком всех провайдеров
+
+### Technical Details 🔧
+
+- Поддержка разных API форматов:
+  - OpenAI-compatible (стандартный формат)
+  - Anthropic Messages API (custom headers)
+  - Google Gemini (generateContent endpoint)
+  - Qwen DashScope (custom body format)
+  - Azure OpenAI (query parameter auth)
+- Универсальный interface через trait
+- Graceful fallback для локальных моделей
+- Поддержка custom base URLs для локальных провайдеров
+
+### Benefits 🎯
+
+- **Flexibility**: Выбор между 9 разными провайдерами
+- **Privacy**: Локальные модели не отправляют данные в облако
+- **Cost**: Бесплатные локальные альтернативы
+- **Development**: Тестирование без API ключей через Ollama
+- **Production**: Выбор лучшего провайдера для задачи
+
 ## [0.2.0] - 2024-12-04 (планируется)
 
 ### Planned
@@ -125,6 +244,7 @@
 - 11 unit и integration тестов
 - MIT лицензия
 
+[0.4.0]: https://github.com/yourusername/longcodezip-rs/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/yourusername/longcodezip-rs/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/yourusername/longcodezip-rs/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/yourusername/longcodezip-rs/releases/tag/v0.1.0

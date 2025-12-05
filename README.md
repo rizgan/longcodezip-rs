@@ -14,8 +14,11 @@ LongCodeZip - это двухэтапный метод компрессии ко
 ## Особенности
 
 - ✅ Разбиение кода на функции (Python, Rust, TypeScript, JavaScript, C++, Java, Go)
+- ✅ **Сжатие обычного текста** (не только кода!) с 4 стратегиями разбиения
 - ✅ Ранжирование функций по релевантности к запросу
-- ✅ Поддержка OpenAI-совместимых API (DeepSeek, OpenAI)
+- ✅ **Поддержка множества LLM провайдеров:**
+  - **Cloud**: OpenAI, DeepSeek, Anthropic Claude, Azure OpenAI, Google Gemini, Qwen (Alibaba)
+  - **Local**: Ollama, LM Studio, llama.cpp
 - ✅ Настраиваемый коэффициент компрессии
 - ✅ Асинхронная работа с API
 - ✅ **Точный tokenizer (tiktoken) для всех моделей**
@@ -91,13 +94,68 @@ cargo run --example tokenizer_demo
 cargo run --example fine_grained_demo
 ```
 
+### Демонстрация провайдеров:
+
+```bash
+# Показывает конфигурацию для всех поддерживаемых провайдеров
+cargo run --example providers_demo
+```
+
+### Сжатие текста (NEW! 🎉):
+
+```bash
+# Демонстрация сжатия обычного текста
+cargo run --example text_compression_demo
+```
+
+**📖 Подробная документация по сжатию текста:** См. [TEXT_COMPRESSION.md](TEXT_COMPRESSION.md)
+
 В примере используется предустановленный API ключ для тестирования:
 ```
 provider: "deepseek"
 api_url: "https://api.deepseek.com/chat/completions"
-api_key: "key"
+api_key: "your-api-key"
 model: "deepseek-chat"
 ```
+
+## Поддерживаемые провайдеры
+
+### Cloud провайдеры
+
+```rust
+// OpenAI
+let provider = ProviderConfig::openai("your-key", "gpt-4");
+
+// DeepSeek
+let provider = ProviderConfig::deepseek("your-key");
+
+// Anthropic Claude
+let provider = ProviderConfig::claude("your-key", "claude-3-5-sonnet-20241022");
+
+// Azure OpenAI
+let provider = ProviderConfig::azure_openai("your-key", "resource", "deployment", "2024-02-01");
+
+// Google Gemini
+let provider = ProviderConfig::gemini("your-key", "gemini-pro");
+
+// Qwen (Alibaba)
+let provider = ProviderConfig::qwen("your-key", "qwen-turbo");
+```
+
+### Local модели (без API ключа)
+
+```rust
+// Ollama
+let provider = ProviderConfig::ollama("llama3.1:8b", None);
+
+// LM Studio
+let provider = ProviderConfig::lm_studio("local-model", None);
+
+// llama.cpp server
+let provider = ProviderConfig::llama_cpp("model-name", Some("http://localhost:8080"));
+```
+
+**📖 Подробная документация:** См. [PROVIDER_GUIDE.md](PROVIDER_GUIDE.md)
 
 ## Конфигурация
 
@@ -149,6 +207,27 @@ let config = CompressionConfig {
 **Параметры:**
 - `code`: Исходный код для компрессии
 - `query`: Запрос для определения релевантности
+
+### `compress_text(&self, text: &str, query: &str, instruction: &str, strategy: TextChunkingStrategy)` 🆕
+
+Компрессирует обычный текст (не код) с использованием выбранной стратегии разбиения.
+
+**Параметры:**
+- `text`: Исходный текст для компрессии
+- `query`: Запрос для определения релевантности
+- `instruction`: Дополнительные инструкции (опционально)
+- `strategy`: Стратегия разбиения (Paragraphs, Sentences, MarkdownSections, Custom)
+
+**Пример:**
+```rust
+use longcodezip::text_chunker::TextChunkingStrategy;
+
+let result = compressor
+    .compress_text(article, "What is AI?", "", TextChunkingStrategy::Paragraphs)
+    .await?;
+```
+
+**📖 Подробности:** См. [TEXT_COMPRESSION.md](TEXT_COMPRESSION.md)
 - `instruction`: Дополнительная инструкция для промпта
 
 **Возвращает:** `CompressionResult` с сжатым кодом и статистикой.

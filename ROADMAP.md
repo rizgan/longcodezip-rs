@@ -50,28 +50,34 @@
 ### Приоритет: СРЕДНИЙ
 **Срок:** 1 месяц
 
-- [ ] **Anthropic Claude**
+- [x] **Anthropic Claude**
   - API интеграция
-  - Streaming поддержка
-  - Расчет через Messages API
+  - Messages API поддержка
+  - Proper header handling (x-api-key, anthropic-version)
 
-- [ ] **Local models**
-  - llama.cpp интеграция
-  - GGUF модели поддержка
-  - Локальный inference
+- [x] **Local models**
+  - llama.cpp интеграция (OpenAI-compatible endpoint)
+  - Ollama поддержка
+  - LM Studio поддержка
 
-- [ ] **Azure OpenAI**
+- [x] **Azure OpenAI**
   - Azure-specific endpoints
-  - Managed identity auth
-  - Rate limiting
+  - API key authentication
+  - Query parameter API version
 
-- [ ] **Gemini**
+- [x] **Gemini**
   - Google AI API
   - Gemini Pro модели
+  - generateContent endpoint
 
-- [ ] **Hugging Face**
-  - Inference API
-  - Serverless endpoints
+- [x] **Qwen (Alibaba)**
+  - DashScope API
+  - Qwen модели
+  - Custom request format
+
+- [ ] **Streaming support** (Future enhancement)
+  - Streaming для всех провайдеров
+  - Incremental response processing
 
 ## Версия 0.5.0 - CLI инструмент
 
