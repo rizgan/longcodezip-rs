@@ -95,7 +95,7 @@ cargo run --example fine_grained_demo
 ```
 provider: "deepseek"
 api_url: "https://api.deepseek.com/chat/completions"
-api_key: "sk-b78ab15d637749a9a8c6ae69a919c0a9"
+api_key: "key"
 model: "deepseek-chat"
 ```
 
