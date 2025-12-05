@@ -1,0 +1,43 @@
+[package]
+name = "longcodezip"
+version = "0.1.0"
+edition = "2021"
+authors = ["LongCodeZip Contributors"]
+description = "Rust implementation of LongCodeZip - compress long code context for LLMs"
+license = "MIT"
+repository = "https://github.com/yourusername/longcodezip-rs"
+keywords = ["llm", "code", "compression", "ai"]
+categories = ["development-tools", "text-processing"]
+
+[lib]
+name = "longcodezip"
+path = "src/lib.rs"
+
+[[example]]
+name = "demo"
+path = "examples/demo.rs"
+
+[[example]]
+name = "tokenizer_demo"
+path = "examples/tokenizer_demo.rs"
+
+[[example]]
+name = "fine_grained_demo"
+path = "examples/fine_grained_demo.rs"
+
+[dependencies]
+tokio = { version = "1.41", features = ["full"] }
+reqwest = { version = "0.12", features = ["json"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+regex = "1.11"
+thiserror = "2.0"
+log = "0.4"
+env_logger = "0.11"
+anyhow = "1.0"
+async-trait = "0.1"
+tiktoken-rs = "0.5"
+lazy_static = "1.4"
+
+[dev-dependencies]
+tokio-test = "0.4"
