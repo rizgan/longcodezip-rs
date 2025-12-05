@@ -173,13 +173,16 @@ impl ProviderConfig {
 }
 
 /// Configuration for code compression
+///
+/// Note: The `language` field is only used for `compress_code()` method.
+/// When using `compress_text()`, this field is ignored.
 #[derive(Debug, Clone)]
 pub struct CompressionConfig {
     /// Compression rate (0.0-1.0)
     pub rate: f64,
     /// Target number of tokens (-1 for auto)
     pub target_token: i32,
-    /// Programming language
+    /// Programming language (only used for compress_code, ignored for compress_text)
     pub language: CodeLanguage,
     /// Dynamic compression ratio
     pub dynamic_compression_ratio: f64,

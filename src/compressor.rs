@@ -348,6 +348,9 @@ def multiply(x, y):
 impl LongCodeZip {
     /// Compress regular text (non-code) with specified chunking strategy
     ///
+    /// **Note**: This method ignores the `language` field in `CompressionConfig`.
+    /// You can use the same config for both code and text compression.
+    ///
     /// # Arguments
     /// * `text` - The text to compress
     /// * `query` - Query to determine relevance

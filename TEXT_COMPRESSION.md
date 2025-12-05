@@ -2,6 +2,33 @@
 
 LongCodeZip теперь поддерживает сжатие не только кода, но и обычного текста!
 
+## ⚡ Быстрый старт
+
+**Важно**: Для сжатия текста **НЕ нужно ничего менять** в конфигурации! 
+Используйте обычный `CompressionConfig` - поле `language` будет проигнорировано.
+
+```rust
+use longcodezip::{LongCodeZip, CompressionConfig, ProviderConfig, text_chunker::TextChunkingStrategy};
+
+// Обычная конфигурация - ничего особенного!
+let config = CompressionConfig::default()
+    .with_provider(ProviderConfig::deepseek("your-key"));
+
+let compressor = LongCodeZip::new(config)?;
+
+// Сжимаем текст
+let result = compressor
+    .compress_text(
+        "Ваш текст здесь...",
+        "Ваш вопрос?",
+        "",
+        TextChunkingStrategy::Paragraphs  // Выбираем стратегию
+    )
+    .await?;
+
+println!("Сжато: {} → {} токенов", result.original_tokens, result.compressed_tokens);
+```
+
 ## Основные возможности
 
 ### Стратегии разбиения
