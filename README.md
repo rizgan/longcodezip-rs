@@ -41,6 +41,16 @@ LongCodeZip - это двухэтапный метод компрессии, о�
 
 **Подробные результаты:** См. [test_files/LLM_TEST_RESULTS.md](test_files/LLM_TEST_RESULTS.md)
 
+## 📚 Документация
+
+- 🚀 **[QUICKSTART.md](QUICKSTART.md)** - Быстрое начало работы
+- 📊 **[COMPRESSION_BENCHMARKS.md](COMPRESSION_BENCHMARKS.md)** - Детальные бенчмарки и результаты тестов
+- 💡 **[USAGE_EXAMPLES.md](USAGE_EXAMPLES.md)** - 15+ примеров использования (с LLM и без)
+- 🔧 **[PROVIDER_GUIDE.md](PROVIDER_GUIDE.md)** - Настройка LLM провайдеров
+- ⚡ **[CACHE_PARALLEL.md](CACHE_PARALLEL.md)** - Кеширование и параллельная обработка
+- 📝 **[TEXT_COMPRESSION.md](TEXT_COMPRESSION.md)** - Сжатие обычного текста
+- 🏗️ **[ARCHITECTURE.md](ARCHITECTURE.md)** - Архитектура проекта
+
 ## 🚀 Быстрый старт
 
 ```rust
@@ -416,11 +426,34 @@ cargo run --example fine_grained_demo
 
 MIT License
 
+## 📖 Дополнительная документация
+
+### Руководства
+- [QUICKSTART.md](QUICKSTART.md) - Быстрый старт
+- [USAGE_EXAMPLES.md](USAGE_EXAMPLES.md) - Практические примеры
+- [PROVIDER_GUIDE.md](PROVIDER_GUIDE.md) - Настройка провайдеров
+- [PROVIDER_QUICK_REF.md](PROVIDER_QUICK_REF.md) - Краткий справочник
+
+### Технические детали
+- [COMPRESSION_BENCHMARKS.md](COMPRESSION_BENCHMARKS.md) - Бенчмарки и метрики
+- [ARCHITECTURE.md](ARCHITECTURE.md) - Архитектура
+- [CACHE_PARALLEL.md](CACHE_PARALLEL.md) - Оптимизация производительности
+- [FINE_GRAINED.md](FINE_GRAINED.md) - Fine-grained компрессия
+- [TEXT_COMPRESSION.md](TEXT_COMPRESSION.md) - Сжатие текста
+- [TOKENIZER_GUIDE.md](TOKENIZER_GUIDE.md) - Работа с токенизаторами
+
+### История разработки
+- [ROADMAP.md](ROADMAP.md) - План развития
+- [ROADMAP_STATUS.md](ROADMAP_STATUS.md) - Статус задач
+- [CHANGELOG.md](CHANGELOG.md) - История изменений
+- [IMPLEMENTATION_REPORT.md](IMPLEMENTATION_REPORT.md) - Отчеты о реализации
+
 ## Ссылки
 
 - [Оригинальная Python версия](https://github.com/YerbaPage/LongCodeZip)
 - [Статья ASE 2025](https://arxiv.org/abs/2510.00446)
 - [DeepSeek API](https://platform.deepseek.com/)
+- [GitHub Repository](https://github.com/rizgan/longcodezip-rs)
 
 ## Авторы
 
