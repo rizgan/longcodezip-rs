@@ -1,5 +1,8 @@
 /target
 
+# Python reference implementation (not used in Rust project)
+LongCodeZip/
+
 # Local test files with API keys
 examples/test_providers.rs
 examples/test_text.rs
