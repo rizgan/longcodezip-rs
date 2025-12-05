@@ -39,6 +39,8 @@ pub mod provider;
 pub mod text_chunker;
 pub mod tokenizer;
 pub mod types;
+pub mod cache;
+pub mod parallel;
 
 pub use error::{Error, Result};
 pub use types::{
@@ -50,6 +52,7 @@ pub use tokenizer::{Tokenizer, TokenizerModel, ApproximateTokenizer};
 pub use entropy::{EntropyChunker, EntropyChunk, ThresholdMethod};
 pub use optimizer::{KnapsackOptimizer, Block, SelectionResult};
 pub use text_chunker::{TextChunker, TextChunk, TextChunkingStrategy, ChunkType};
+pub use cache::{ResponseCache, CacheEntry, CacheStats};
 
 /// Library version
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");

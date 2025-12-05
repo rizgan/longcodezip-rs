@@ -202,6 +202,14 @@ pub struct CompressionConfig {
     pub repeat_instruction_at_end: bool,
     /// Provider configuration
     pub provider: ProviderConfig,
+    /// Enable LLM response caching
+    pub enable_cache: bool,
+    /// Cache TTL in seconds (default: 7 days)
+    pub cache_ttl: u64,
+    /// Enable parallel chunk processing
+    pub enable_parallel: bool,
+    /// Number of parallel threads (0 = auto)
+    pub parallel_threads: usize,
 }
 
 impl Default for CompressionConfig {
@@ -224,6 +232,10 @@ impl Default for CompressionConfig {
                 "",
                 "deepseek-chat"
             ),
+            enable_cache: true,
+            cache_ttl: 7 * 24 * 60 * 60, // 7 days
+            enable_parallel: true,
+            parallel_threads: 0, // auto
         }
     }
 }
@@ -251,6 +263,26 @@ impl CompressionConfig {
     
     pub fn with_rank_only(mut self, rank_only: bool) -> Self {
         self.rank_only = rank_only;
+        self
+    }
+    
+    pub fn with_cache(mut self, enabled: bool) -> Self {
+        self.enable_cache = enabled;
+        self
+    }
+    
+    pub fn with_cache_ttl(mut self, ttl_seconds: u64) -> Self {
+        self.cache_ttl = ttl_seconds;
+        self
+    }
+    
+    pub fn with_parallel(mut self, enabled: bool) -> Self {
+        self.enable_parallel = enabled;
+        self
+    }
+    
+    pub fn with_parallel_threads(mut self, threads: usize) -> Self {
+        self.parallel_threads = threads;
         self
     }
 }

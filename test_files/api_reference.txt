@@ -1,0 +1,110 @@
+# API Reference Guide
+
+## Authentication
+
+All API requests require authentication using an API key in the header:
+
+```bash
+Authorization: Bearer YOUR_API_KEY
+```
+
+## Endpoints
+
+### Users
+
+#### GET /api/v1/users
+List all users with pagination.
+
+**Query Parameters:**
+- `page` (integer): Page number (default: 1)
+- `limit` (integer): Items per page (default: 20, max: 100)
+- `sort` (string): Sort field (default: created_at)
+- `order` (string): Sort order - asc or desc (default: desc)
+
+**Example Request:**
+```bash
+curl -H "Authorization: Bearer sk-xxx" \
+  "https://api.example.com/v1/users?page=1&limit=20"
+```
+
+**Response:**
+```json
+{
+  "users": [
+    {
+      "id": "usr_123",
+      "email": "user@example.com",
+      "name": "John Doe",
+      "created_at": "2025-01-15T10:30:00Z"
+    }
+  ],
+  "pagination": {
+    "page": 1,
+    "limit": 20,
+    "total": 150
+  }
+}
+```
+
+#### POST /api/v1/users
+Create a new user.
+
+**Request Body:**
+```json
+{
+  "email": "newuser@example.com",
+  "name": "Jane Smith",
+  "password": "secure_password"
+}
+```
+
+#### DELETE /api/v1/users/{id}
+Delete a user by ID.
+
+### Products
+
+#### GET /api/v1/products
+List products with filters.
+
+**Query Parameters:**
+- `category` (string): Filter by category
+- `min_price` (float): Minimum price
+- `max_price` (float): Maximum price
+- `in_stock` (boolean): Only in-stock items
+
+### Orders
+
+#### POST /api/v1/orders
+Create new order.
+
+**Request Body:**
+```json
+{
+  "user_id": "usr_123",
+  "items": [
+    {
+      "product_id": "prod_456",
+      "quantity": 2
+    }
+  ],
+  "shipping_address": {
+    "street": "123 Main St",
+    "city": "New York",
+    "zip": "10001"
+  }
+}
+```
+
+## Rate Limiting
+
+API requests are limited to:
+- 100 requests per minute for free tier
+- 1000 requests per minute for pro tier
+
+## Error Codes
+
+- `400` - Bad Request
+- `401` - Unauthorized
+- `404` - Not Found
+- `429` - Rate Limit Exceeded
+- `500` - Internal Server Error

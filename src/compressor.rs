@@ -1,14 +1,17 @@
 //! Main compressor implementation
 
+use crate::cache::ResponseCache;
 use crate::code_splitter::split_code_by_functions;
 use crate::entropy::EntropyChunker;
 use crate::error::{Error, Result};
 use crate::optimizer::{Block, KnapsackOptimizer};
+use crate::parallel::ParallelProcessor;
 use crate::provider::{create_provider, LLMProvider};
 use crate::text_chunker::{TextChunker, TextChunkingStrategy};
 use crate::types::{CompressionConfig, CompressionResult, FunctionCompression};
 use log::{debug, info};
 use std::collections::{HashMap, HashSet};
+use std::sync::Mutex;
 
 /// Main LongCodeZip compressor
 pub struct LongCodeZip {
@@ -17,6 +20,8 @@ pub struct LongCodeZip {
     entropy_chunker: EntropyChunker,
     text_chunker: TextChunker,
     optimizer: KnapsackOptimizer,
+    cache: Mutex<ResponseCache>,
+    parallel_processor: ParallelProcessor,
 }
 
 impl LongCodeZip {
@@ -31,13 +36,39 @@ impl LongCodeZip {
         let text_chunker = TextChunker::new();
         let optimizer = KnapsackOptimizer::new();
         
+        // Initialize cache
+        let cache = if config.enable_cache {
+            Mutex::new(ResponseCache::with_ttl(config.cache_ttl)?)
+        } else {
+            Mutex::new(ResponseCache::disabled())
+        };
+        
+        // Initialize parallel processor
+        let parallel_processor = if config.enable_parallel {
+            ParallelProcessor::with_threads(config.parallel_threads)
+        } else {
+            ParallelProcessor::with_threads(1) // Sequential
+        };
+        
         Ok(Self { 
             config, 
             provider,
             entropy_chunker,
             text_chunker,
             optimizer,
+            cache,
+            parallel_processor,
         })
+    }
+    
+    /// Get cache statistics
+    pub fn cache_stats(&self) -> crate::cache::CacheStats {
+        self.cache.lock().unwrap().stats()
+    }
+    
+    /// Clear cache
+    pub fn clear_cache(&self) {
+        self.cache.lock().unwrap().clear();
     }
     
     /// Compress code with a query and instruction
@@ -194,14 +225,44 @@ impl LongCodeZip {
     ) -> Result<Vec<f64>> {
         debug!("Calculating importance for {} chunks", chunks.len());
         
-        let mut importances = Vec::new();
-        
-        for chunk in chunks {
-            let score = self.provider.calculate_relevance(chunk, query).await?;
-            importances.push(score);
+        if self.config.enable_parallel && chunks.len() > 1 {
+            // Use parallel processing
+            info!("Using parallel processing for {} chunks", chunks.len());
+            self.parallel_processor
+                .calculate_importances_parallel(
+                    self.provider.as_ref(),
+                    chunks,
+                    query,
+                    Some(&self.cache),
+                    &self.config.provider.model,
+                )
+                .await
+        } else {
+            // Sequential processing
+            let mut importances = Vec::new();
+            
+            for chunk in chunks {
+                // Check cache first
+                let cache_key = ResponseCache::generate_key(
+                    chunk,
+                    query,
+                    &self.config.provider.model,
+                );
+                
+                let score = if let Some(cached) = self.cache.lock().unwrap().get(&cache_key) {
+                    debug!("Cache hit for chunk");
+                    cached
+                } else {
+                    let score = self.provider.calculate_relevance(chunk, query).await?;
+                    self.cache.lock().unwrap().set(cache_key, score);
+                    score
+                };
+                
+                importances.push(score);
+            }
+            
+            Ok(importances)
         }
-        
-        Ok(importances)
     }
     
     /// Select chunks using knapsack optimizer
@@ -426,18 +487,19 @@ impl LongCodeZip {
         debug!("Target tokens: {}", target_token);
 
         // Step 4: Calculate importance scores
-        let chunk_importances = if !query.trim().is_empty() {
-            // Use LLM relevance + chunk's own importance
-            let mut importances = Vec::new();
-            for (chunk, text_chunk) in chunks.iter().zip(text_chunks.iter()) {
-                let llm_score = self.provider.calculate_relevance(chunk, query).await?;
-                let combined = (llm_score + text_chunk.importance) / 2.0;
-                importances.push(combined);
-            }
-            importances
+        let chunk_importances: Vec<f64> = if !query.trim().is_empty() {
+            // Get LLM relevance scores (with caching and parallel processing)
+            let llm_scores = self.calculate_chunk_importances(&chunks, query).await?;
+            
+            // Combine with chunk's own importance
+            llm_scores
+                .into_iter()
+                .zip(text_chunks.iter())
+                .map(|(llm_score, text_chunk)| (llm_score + text_chunk.importance) / 2.0)
+                .collect::<Vec<f64>>()
         } else {
             // Use only chunk's importance score
-            text_chunks.iter().map(|c| c.importance).collect()
+            text_chunks.iter().map(|c| c.importance).collect::<Vec<f64>>()
         };
 
         // Step 5: Select chunks using knapsack
