@@ -33,7 +33,7 @@ async fn run_benchmarks() -> Result<(), Box<dyn std::error::Error>> {
             ProviderConfig::new(
                 "deepseek",
                 "https://api.deepseek.com/chat/completions",
-                "sk-b78ab15d637749a9a8c6ae69a919c0a9",
+                "api-key",
                 "deepseek-chat"
             )
         ),
@@ -42,7 +42,7 @@ async fn run_benchmarks() -> Result<(), Box<dyn std::error::Error>> {
             ProviderConfig::new(
                 "alibabacloud",
                 "https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions",
-                "sk-690a6bc4610c444f9817a163978cb676",
+                "api-key",
                 "qwen-max"
             )
         ),

@@ -83,7 +83,7 @@ class Calculator:
     
     // Get API key from environment variable
     let api_key = env::var("DEEPSEEK_API_KEY")
-        .unwrap_or_else(|_| "sk-b78ab15d637749a9a8c6ae69a919c0a9".to_string());
+        .unwrap_or_else(|_| "api-key".to_string());
     
     // Configure the provider (DeepSeek) - now with accurate tokenizer
     let provider = ProviderConfig::deepseek(&api_key);

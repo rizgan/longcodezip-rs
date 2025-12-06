@@ -16,7 +16,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Поле `language` будет проигнорировано при вызове compress_text()
     let config = CompressionConfig::default()
         .with_rate(0.4)  // 40% от оригинала
-        .with_provider(ProviderConfig::deepseek("sk-b78ab15d637749a9a8c6ae69a919c0a9"));
+        .with_provider(ProviderConfig::deepseek("api-key"));
 
     let compressor = LongCodeZip::new(config)?;
 

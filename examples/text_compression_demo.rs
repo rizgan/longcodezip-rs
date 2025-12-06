@@ -49,7 +49,7 @@ Future Outlook
 As technology advances, quantum computers may revolutionize fields from drug discovery to financial modeling. The race to achieve quantum advantage continues across industry and academia.
 "#;
 
-    let provider = ProviderConfig::deepseek("sk-b78ab15d637749a9a8c6ae69a919c0a9");
+    let provider = ProviderConfig::deepseek("api-key");
 
     println!("=== Text Compression with TextChunker ===\n");
     println!("Original text: {} chars\n", scientific_article.len());

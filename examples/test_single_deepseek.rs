@@ -13,7 +13,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let provider = ProviderConfig::new(
         "deepseek",
         "https://api.deepseek.com/chat/completions",
-        "sk-b78ab15d637749a9a8c6ae69a919c0a9",
+        "api-key",
         "deepseek-chat"
     );
     

@@ -59,7 +59,7 @@ def cross_entropy_loss(predictions: List[float], targets: List[int]) -> float:
     println!("Query: {}\n", query);
 
     // API configuration (using DeepSeek)
-    let api_key = "sk-b78ab15d637749a9a8c6ae69a919c0a9";
+    let api_key = "api-key";
     let provider_config = ProviderConfig::deepseek(api_key);
 
     println!("--- Coarse-Grained Compression (Function-level) ---\n");
